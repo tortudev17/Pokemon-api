@@ -14,6 +14,7 @@ app.post("/calc", (req, res) => {
       ability: attacker.ability,
       nature: attacker.nature,
       level: attacker.level,
+      gender: attacker.gender,
       evs: attacker.evs,
       ivs: attacker.ivs,
       boosts: attacker.boosts,
@@ -26,6 +27,7 @@ app.post("/calc", (req, res) => {
       ability: defender.ability,
       nature: defender.nature,
       level: defender.level,
+      gender: defender.gender,
       evs: defender.evs,
       ivs: defender.ivs,
       boosts: defender.boosts,
@@ -33,18 +35,42 @@ app.post("/calc", (req, res) => {
       curHP: defender.curHP
     });
 
-    const mv = new Move(g, typeof move === "string" ? move : move.name);
+    const mv = new Move(g, typeof move === "string" ? move : move.name, {
+      ability: move.ability,
+      useZ: move.useZ,
+      isCrit: move.isCrit,
+      hits: move.hits,
+      timesUsed: move.timesUsed,
+      isSpread: move.isSpread
+    });
 
-    const fld = new Field(field || {});
+    const fld = new Field({
+      gameType: field?.gameType,
+      weather: field?.weather,
+      terrain: field?.terrain,
+      isGravity: field?.isGravity,
+      attackerSide: field?.attackerSide,
+      defenderSide: field?.defenderSide
+    });
 
     const result = calculate(g, atk, def, mv, fld);
+
+    if (!result.damage || result.damage.every(d => d === 0)) {
+      return res.json({
+        damage: [0],
+        desc: "possibly the worst move ever"
+      });
+    }
 
     res.json({
       damage: result.damage,
       desc: result.fullDesc()
     });
   } catch (err) {
-    res.status(400).json({ error: String(err?.message || err) });
+    res.status(400).json({
+      damage: [0],
+      desc: "possibly the worst move ever"
+    });
   }
 });
 
